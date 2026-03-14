@@ -15,8 +15,9 @@ def load_data(filename):
 
     return data
 
-def leave_one_out_accuracy(data, features):
+def leave_one_out_accuracy(data, features, best_so_far = 0.0):
     correct_count = 0               # to keep track of correctly classified rows
+    wrong_count = 0                 # keep track of wrong answers
     total_instances = len(data)     # total # of rows in the dataset
 
     for i in range(total_instances):    # test each row
@@ -39,8 +40,16 @@ def leave_one_out_accuracy(data, features):
 
         if data[i][0] == nearest_neighbor_label:
             correct_count += 1
+        
+        else:
+            wrong_count += 1
 
-    return correct_count / total_instances
+        max_correct_possible = total_instances - wrong_count    # even if every remaining row were correct, this is the best
+
+        if (max_correct_possible / total_instances) <= best_so_far:     # stop early id this candidate can no longer beat best_so_far
+            return correct_count / total_instances
+
+    return correct_count / total_instances  # return final accuracy if the candidate evaluated completely
 
 def forward_selection(data, num_features):
     current_set = []
@@ -56,7 +65,7 @@ def forward_selection(data, num_features):
                 continue
 
             candidate_set = current_set + [feature]
-            accuracy = leave_one_out_accuracy(data, candidate_set)
+            accuracy = leave_one_out_accuracy(data, candidate_set, best_accuracy_this_level)
 
             print(f"Using feature(s) {candidate_set} accuracy is {accuracy:.3f}")
 
@@ -88,7 +97,7 @@ def backward_elimination(data, num_features):
             candidate_set = current_set.copy()
             candidate_set.remove(feature)
 
-            accuracy = leave_one_out_accuracy(data, candidate_set)
+            accuracy = leave_one_out_accuracy(data, candidate_set, best_accuracy_this_level)
             print(f"Using feature(s) {candidate_set} accuracy is {accuracy:.3f}")
 
             if accuracy > best_accuracy_this_level:     #keep the removal that gives the best accuracy
