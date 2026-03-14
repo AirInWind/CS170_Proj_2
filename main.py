@@ -72,6 +72,36 @@ def forward_selection(data, num_features):
     
     return best_overall_set, best_overall_accuracy
 
+def backward_elimination(data, num_features):
+    current_set = list (range(1, num_features + 1))
+    best_overall_set = current_set.copy()
+    best_overall_accuracy = leave_one_out_accuracy(data, current_set)
+
+    for level in range(num_features, 0, -1):
+        feature_to_remove = None
+        best_accuracy_this_level = 0.0
+
+        for feature in current_set:
+            candidate_set = current_set.copy()
+            candidate_set.remove(feature)
+
+            accuracy = leave_one_out_accuracy(data, candidate_set)
+            print(f"Using feature(s) {candidate_set} accuracy is {accuracy:.3f}")
+
+            if accuracy > best_accuracy_this_level:
+                best_accuracy_this_level = accuracy
+                feature_to_remove = feature
+
+        if feature_to_remove is not None:
+            current_set.remove(feature_to_remove)
+            print(f"Feature set {current_set} was best, accuracy is {best_accuracy_this_level:.3f}\n")
+
+            if best_accuracy_this_level > best_overall_accuracy:
+                best_overall_accuracy = best_accuracy_this_level
+                best_overall_set = current_set.copy()
+
+    return best_overall_set, best_overall_accuracy
+
 def main():
     filename = input("Enter the dataset filename: ")
     data = load_data(filename)
@@ -82,20 +112,21 @@ def main():
     print(f"This dataset has {num_instances} instances.")
     print(f"This dataset has {num_features} features (not including the class attribute).")
 
-    best_set, best_accuracy = forward_selection(data, num_features)
+    choice = input("Type 1 for Forward Selection or 2 for Backward Elimination: ")
+
+    if choice == "1":
+        best_set, best_accuracy = forward_selection(data, num_features)
+
+    elif choice == "2":
+        best_set, best_accuracy = backward_elimination(data, num_features)
+
+    else:
+        print("Invalid choice.")
+        return
 
     print("Finished search.")
     print(f"Best feature subset: {best_set}")
-    print(f"Best accuracy: {best_accuracy:.3f}")  
-
-    # accuracy = leave_one_out_accuracy(data, [7, 10, 12])
-    # print(f"Accuracy with features [7, 10, 12]: {accuracy:.3f}")
-
-    # filename = input("Enter the dataset filename: ")
-    # data = load_data(filename)
-
-    # accuracy = leave_one_out_accuracy(data, [10, 8, 2])
-    # print(f"Accuracy with features [7, 10, 12]: {accuracy:.3f}")
+    print(f"Best accuracy: {best_accuracy:.3f}")
 
 if __name__ == "__main__":
     main()
