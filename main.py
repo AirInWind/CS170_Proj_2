@@ -1,20 +1,13 @@
 import os
 import time
+# import below to speed up search even more
+import numpy as np
+from numba import njit
 
 def load_data(filename):
-    data = []
+    return np.loadtxt(filename)
 
-    with open(filename, "r") as file:
-        for line in file:
-            line = line.strip()
-            if not line:
-                continue
-
-            row = [float(x) for x in line.split()]
-            data.append(row)
-
-    return data
-
+@njit       # compiles this function to machine code for faster execution, especially important since this is called many times during the search
 def leave_one_out_accuracy(data, features, best_so_far = 0.0):
     correct_count = 0               # to keep track of correctly classified rows
     wrong_count = 0                 # keep track of wrong answers
@@ -46,7 +39,7 @@ def leave_one_out_accuracy(data, features, best_so_far = 0.0):
 
         max_correct_possible = total_instances - wrong_count    # even if every remaining row were correct, this is the best
 
-        if (max_correct_possible / total_instances) <= best_so_far:     # stop early id this candidate can no longer beat best_so_far
+        if (max_correct_possible / total_instances) <= best_so_far:     # stop early if this candidate can no longer beat best_so_far
             return correct_count / total_instances
 
     return correct_count / total_instances  # return final accuracy if the candidate evaluated completely
@@ -55,6 +48,7 @@ def forward_selection(data, num_features):
     current_set = []
     best_overall_set = []
     best_overall_accuracy = 0.0
+    consecutive_drops = 0
 
     for level in range(1, num_features + 1):
         feature_to_add = None                   # stores best feature
@@ -65,6 +59,7 @@ def forward_selection(data, num_features):
                 continue
 
             candidate_set = current_set + [feature]
+            candidate_array = np.array(candidate_set, dtype=np.int64)       # pass as NumPy integer array for the compiled funciton
             accuracy = leave_one_out_accuracy(data, candidate_set, best_accuracy_this_level)
 
             print(f"Using feature(s) {candidate_set} accuracy is {accuracy:.3f}")
@@ -81,6 +76,14 @@ def forward_selection(data, num_features):
             if best_accuracy_this_level > best_overall_accuracy:
                 best_overall_accuracy = best_accuracy_this_level
                 best_overall_set = current_set.copy()
+                consecutive_drops = 0
+
+            else:
+                consecutive_drops += 1
+
+            if consecutive_drops >= 6:     # stop if accuracy has dropped for 6 levels in a row
+                print("Accuracy has dropped for 6 levels in a row. Stopping search.")
+                break
     
     return best_overall_set, best_overall_accuracy
 
@@ -89,14 +92,15 @@ def backward_elimination(data, num_features):
     best_overall_set = current_set.copy()                               # save the best subset found during the search
     best_overall_accuracy = leave_one_out_accuracy(data, current_set)
 
-    for level in range(num_features, 0, -1):        # each round removes one feature
+    # num_features, 1, -1 so it doesnt try empty candidate []
+    for level in range(num_features, 1, -1):        # each round removes one feature
         feature_to_remove = None
         best_accuracy_this_level = 0.0
 
         for feature in current_set:                 # try removing each feature currently in the set
             candidate_set = current_set.copy()
             candidate_set.remove(feature)
-
+            candidate_array = np.array(candidate_set, dtype=np.int64)       # pass as NumPy integer array for the compiled funciton
             accuracy = leave_one_out_accuracy(data, candidate_set, best_accuracy_this_level)
             print(f"Using feature(s) {candidate_set} accuracy is {accuracy:.3f}")
 
