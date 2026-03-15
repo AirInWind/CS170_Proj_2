@@ -48,7 +48,6 @@ def forward_selection(data, num_features):
     current_set = []
     best_overall_set = []
     best_overall_accuracy = 0.0
-    consecutive_drops = 0
 
     for level in range(1, num_features + 1):
         feature_to_add = None                   # stores best feature
@@ -60,7 +59,7 @@ def forward_selection(data, num_features):
 
             candidate_set = current_set + [feature]
             candidate_array = np.array(candidate_set, dtype=np.int64)       # pass as NumPy integer array for the compiled funciton
-            accuracy = leave_one_out_accuracy(data, candidate_set, best_accuracy_this_level)
+            accuracy = leave_one_out_accuracy(data, candidate_array, best_accuracy_this_level)
 
             print(f"Using feature(s) {candidate_set} accuracy is {accuracy:.3f}")
 
@@ -76,14 +75,6 @@ def forward_selection(data, num_features):
             if best_accuracy_this_level > best_overall_accuracy:
                 best_overall_accuracy = best_accuracy_this_level
                 best_overall_set = current_set.copy()
-                consecutive_drops = 0
-
-            else:
-                consecutive_drops += 1
-
-            if consecutive_drops >= 6:     # stop if accuracy has dropped for 6 levels in a row
-                print("Accuracy has dropped for 6 levels in a row. Stopping search.")
-                break
     
     return best_overall_set, best_overall_accuracy
 
@@ -101,7 +92,7 @@ def backward_elimination(data, num_features):
             candidate_set = current_set.copy()
             candidate_set.remove(feature)
             candidate_array = np.array(candidate_set, dtype=np.int64)       # pass as NumPy integer array for the compiled funciton
-            accuracy = leave_one_out_accuracy(data, candidate_set, best_accuracy_this_level)
+            accuracy = leave_one_out_accuracy(data, candidate_array, best_accuracy_this_level)
             print(f"Using feature(s) {candidate_set} accuracy is {accuracy:.3f}")
 
             if accuracy > best_accuracy_this_level:     #keep the removal that gives the best accuracy
@@ -135,7 +126,7 @@ def main():
     print(f"This dataset has {num_features} features (not including the class attribute).")
 
     
-    choice = input("Type 1 for Forward Selection or 2 for Backward Elimination: ")
+    choice = input("Type 1 for Forward Selection or 2 for Backward Elimination: \n")
     start_time = time.time()
 
     if choice == "1":
