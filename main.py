@@ -7,6 +7,12 @@ from numba import njit
 def load_data(filename):
     return np.loadtxt(filename)
 
+def empty_subset_accuracy(data):
+    labels = data[:, 0]     # get the class labels (first column)
+    class_one_count = np.sum(labels == 1)    # count how many instances belong to class 1
+    class_two_count = len(labels) - class_one_count    # the rest belong to class 2
+    return max(class_one_count, class_two_count) / len(labels)    # accuracy is the proportion of the majority class
+
 @njit       # compiles this function to machine code for faster execution, especially important since this is called many times during the search
 def leave_one_out_accuracy(data, features, best_so_far = 0.0):
     correct_count = 0               # to keep track of correctly classified rows
@@ -49,6 +55,13 @@ def forward_selection(data, num_features):
     best_overall_set = []
     best_overall_accuracy = 0.0
 
+    empty_accuracy = empty_subset_accuracy(data)
+    best_overall_set = []
+    best_overall_accuracy = empty_accuracy
+
+    print("Beginning search with the empty feature set.")
+    print(f"Feature set [] was best, accuracy is {empty_accuracy:.3f}\n")
+
     for level in range(1, num_features + 1):
         feature_to_add = None                   # stores best feature
         best_accuracy_this_level = 0.0          # stores best accuracy
@@ -84,7 +97,7 @@ def backward_elimination(data, num_features):
     best_overall_accuracy = leave_one_out_accuracy(data, current_set)
 
     # num_features, 1, -1 so it doesnt try empty candidate []
-    for level in range(num_features, 1, -1):        # each round removes one feature
+    for level in range(num_features, 0, -1):        # each round removes one feature
         feature_to_remove = None
         best_accuracy_this_level = 0.0
 
